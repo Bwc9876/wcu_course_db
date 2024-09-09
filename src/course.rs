@@ -32,7 +32,7 @@ impl fmt::Debug for CourseCode {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Course {
     pub title: String,
     pub code: CourseCode,
@@ -45,7 +45,8 @@ pub struct Course {
     pub offered_terms: Vec<String>,
 }
 
-impl Course {}
+impl Course {
+}
 
 #[cfg(test)]
 mod tests {
@@ -63,6 +64,6 @@ mod tests {
             prefix: "BIO".to_string(),
             number: 110,
         };
-        assert_eq!(code.to_string(), "BIO 110-G");
+        assert_eq!(code.to_string(), "BIO 110");
     }
 }

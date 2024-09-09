@@ -1,1 +1,6 @@
 /target
+out.*
+*.dot
+*.pdf
+!out.rs
+courses.json

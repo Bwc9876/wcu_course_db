@@ -1,11 +1,14 @@
+use std::time::Duration;
+
 use crate::course::{Course, CourseCode};
 
+use indicatif::{ProgressStyle, ProgressBar};
 use regex::RegexBuilder;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
 const WCU_CATALOG: &str = "https://catalog.wcupa.edu/ribbit/";
-const WCU_COURSE_PREFIXES: &str = "https://catalog.wcupa.edu/general-information/index-course-prefix-guide/course-prefix-guide/index.xml";
+const WCU_COURSE_PREFIXES: &str = "https://catalog.wcupa.edu/general-information/index-course-prefix-guide/course-index/undergraduate/index.xml";
 const GET_COURSES_FOR_SUBJECT: &str = "?page=getcourse.rjs&subject=";
 
 const PRE_REQ_ATTR_ID: &str = "Pre / Co requisites:";
@@ -94,6 +97,8 @@ fn parse_course_block(code: CourseCode, raw: &str) -> Course {
         credits = capture.get(2).unwrap().as_str().to_string();
     }
 
+    pre_requirements.dedup();
+
     Course {
         title: title.to_string(),
         code: code.clone(),
@@ -134,7 +139,7 @@ pub async fn get_all_courses_for_subject(subject: &str) -> Vec<Course> {
 pub async fn get_all_subjects() -> Vec<String> {
     let body = get_with_retry(WCU_COURSE_PREFIXES).await;
 
-    let re = RegexBuilder::new("<td class=\"column0\">(.*?)</td>")
+    let re = RegexBuilder::new("general-information/index-course-prefix-guide/course-index/undergraduate/(.*?)/")
         .dot_matches_new_line(true)
         .build()
         .unwrap();
@@ -147,4 +152,30 @@ pub async fn get_all_subjects() -> Vec<String> {
     }
 
     subjects
+}
+
+const BAR_TEMPLATE: &str = "{spinner} {wide_msg} [{bar:100.green/cyan}]";
+const PROGRESS_CHARS: &str = "=>-";
+
+pub async fn get_all_courses() -> Vec<Course> {
+    let mut all_courses: Vec<Course> = Vec::new();
+    let subjects = get_all_subjects().await;
+
+    let style = ProgressStyle::with_template(BAR_TEMPLATE)
+        .unwrap()
+        .progress_chars(PROGRESS_CHARS);
+
+    let bar = ProgressBar::new(subjects.len() as u64);
+
+    bar.set_style(style);
+    bar.enable_steady_tick(Duration::from_millis(100));
+
+    for subject in subjects.iter() {
+        let msg = format!("Fetching courses for {}", subject);
+        bar.set_message(msg);
+        let courses = get_all_courses_for_subject(subject).await;
+        all_courses.extend(courses);
+        bar.inc(1);
+    }
+    all_courses
 }
