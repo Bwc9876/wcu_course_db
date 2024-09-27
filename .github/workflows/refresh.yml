@@ -1,0 +1,32 @@
+name: Refresh Database
+
+on:
+  schedule:
+    - cron: "0 * * * 0"
+  workflow_dispatch:
+
+permissions:
+  pages: write
+
+jobs:
+    refresh:
+        name: Refresh Database
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+            - uses: Swatinem/rust-cache@v2
+            - name: Run
+              run: |
+                cargo build --release
+            - name: Create and Move database
+              run: |
+                mkdir pages
+                mv courses.json pages
+            - name: Upload Pages Artifact
+              uses: actions/upload-pages-artifact@v3
+              with:
+                path: pages
+            - name: Deploy to GitHub Pages
+              if: ${{ github.event_name != 'pull_request' }}
+              uses: actions/deploy-pages@v4

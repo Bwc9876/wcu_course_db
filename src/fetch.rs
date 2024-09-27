@@ -157,9 +157,8 @@ pub async fn get_all_subjects() -> Vec<String> {
 const BAR_TEMPLATE: &str = "{spinner} {wide_msg} [{bar:100.green/cyan}]";
 const PROGRESS_CHARS: &str = "=>-";
 
-pub async fn get_all_courses() -> Vec<Course> {
+pub async fn get_all_courses(subjects: &[String]) -> Vec<Course> {
     let mut all_courses: Vec<Course> = Vec::new();
-    let subjects = get_all_subjects().await;
 
     let style = ProgressStyle::with_template(BAR_TEMPLATE)
         .unwrap()
