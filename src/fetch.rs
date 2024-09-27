@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::course::{Course, CourseCode};
 
-use indicatif::{ProgressStyle, ProgressBar};
+use indicatif::{ProgressBar, ProgressStyle};
 use regex::RegexBuilder;
 use reqwest_middleware::ClientBuilder;
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -139,10 +139,12 @@ pub async fn get_all_courses_for_subject(subject: &str) -> Vec<Course> {
 pub async fn get_all_subjects() -> Vec<String> {
     let body = get_with_retry(WCU_COURSE_PREFIXES).await;
 
-    let re = RegexBuilder::new("general-information/index-course-prefix-guide/course-index/undergraduate/(.*?)/")
-        .dot_matches_new_line(true)
-        .build()
-        .unwrap();
+    let re = RegexBuilder::new(
+        "general-information/index-course-prefix-guide/course-index/undergraduate/(.*?)/",
+    )
+    .dot_matches_new_line(true)
+    .build()
+    .unwrap();
 
     let mut subjects: Vec<String> = Vec::new();
 

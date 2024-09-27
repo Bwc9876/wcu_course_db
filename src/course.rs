@@ -45,8 +45,7 @@ pub struct Course {
     pub offered_terms: Vec<String>,
 }
 
-impl Course {
-}
+impl Course {}
 
 #[cfg(test)]
 mod tests {

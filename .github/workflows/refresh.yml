@@ -18,7 +18,7 @@ jobs:
             - uses: Swatinem/rust-cache@v2
             - name: Run
               run: |
-                cargo build --release
+                cargo run --release
             - name: Create and Move database
               run: |
                 mkdir pages

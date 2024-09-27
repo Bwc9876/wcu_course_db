@@ -1,9 +1,6 @@
 mod course;
 mod fetch;
-mod graph;
-
-use std::fs::File;
-use std::env::args;
+//mod graph;
 
 use course::Course;
 use serde::{Deserialize, Serialize};
@@ -24,5 +21,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         prefixes: subjects,
     };
 
-    std::fs::write("courses.json", serde_json::to_string(&out).unwrap())
+    std::fs::write("courses.json", serde_json::to_string(&out).unwrap()).unwrap();
+
+    Ok(())
 }
