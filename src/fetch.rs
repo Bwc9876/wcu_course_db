@@ -55,7 +55,14 @@ fn parse_course_block(code: CourseCode, raw: &str) -> Course {
             .split("<br />\n")
             .collect::<Vec<&str>>();
 
+        let desc_re = RegexBuilder::new(r#"<a href="\/search\/\?P=(\w+)%20(.+)" title=.*<\/a>"#)
+            .build()
+            .unwrap();
         description = attrs.first().unwrap().to_string();
+
+        description = desc_re
+            .replace_all(&description, "<a href=\"#$1 $2\">$1 $2</a>")
+            .to_string();
 
         for (i, attr) in attrs.iter().enumerate() {
             if i != 0 {
