@@ -28,7 +28,7 @@ async fn get_with_retry(url: &str) -> String {
 }
 
 fn parse_course_block(code: CourseCode, raw: &str) -> Course {
-    let re = RegexBuilder::new(r"<strong>.*&#160;.*\.  (.*)\.  ([+-]?(?:\d*\.)?\d+).*</strong>.*<p.*courseblockdesc.>(.*)<br />\n</p>").dot_matches_new_line(true).build().unwrap();
+    let re = RegexBuilder::new(r"<strong>.*?\.  </span><span>(.*?)\..*?</span><span>([+-]?(?:\d*\.)?\d+).*?p.*?(?:courseblockdesc.*?>(.*?))?</div>").dot_matches_new_line(true).build().unwrap();
 
     let title: String;
     let credits: String;
@@ -49,8 +49,8 @@ fn parse_course_block(code: CourseCode, raw: &str) -> Course {
 
         let attrs = capture
             .get(3)
-            .unwrap()
-            .as_str()
+            .map(|m| m.as_str())
+            .unwrap_or_default()
             .trim()
             .split("<br />\n")
             .collect::<Vec<&str>>();
@@ -95,6 +95,7 @@ fn parse_course_block(code: CourseCode, raw: &str) -> Course {
             }
         }
     } else {
+        eprintln!("{raw}");
         let re = RegexBuilder::new(r"<strong>.*&#160;.*\.  (.*)\.  (\d+).*</strong>")
             .dot_matches_new_line(true)
             .build()
