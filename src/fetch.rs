@@ -11,7 +11,7 @@ const WCU_CATALOG: &str = "https://catalog.wcupa.edu/ribbit/";
 const WCU_COURSE_PREFIXES: &str = "https://catalog.wcupa.edu/general-information/index-course-prefix-guide/course-index/undergraduate/index.xml";
 const GET_COURSES_FOR_SUBJECT: &str = "?page=getcourse.rjs&subject=";
 
-const PRE_REQ_ATTR_ID: &str = "Pre / Co requisites:";
+const PRE_REQ_ATTR_ID: &str = "Prerequisite:";
 const GEN_ED_ATTR_ID: &str = "Gen Ed Attribute:";
 const DISTANT_ED_ATTR_ID: &str = "Distance education offering may be available.";
 const OFFERED_ATTR_ID: &str = "Typically offered in";
@@ -28,7 +28,7 @@ async fn get_with_retry(url: &str) -> String {
 }
 
 fn parse_course_block(code: CourseCode, raw: &str) -> Course {
-    let re = RegexBuilder::new(r"<strong>.*?\.  </span><span>(.*?)\..*?</span><span>([+-]?(?:\d*\.)?\d+).*?p.*?(?:courseblockdesc.*?>(.*?))?</div>").dot_matches_new_line(true).build().unwrap();
+    let re = RegexBuilder::new(r"<strong><span>.*?</span><span>(.*?). </span><span>([+-]?(?:\d*\.)?\d+).*?Credits?\. +?</span></strong></p>.(.*?)?</div>").dot_matches_new_line(true).build().unwrap();
 
     let title: String;
     let credits: String;
@@ -37,6 +37,11 @@ fn parse_course_block(code: CourseCode, raw: &str) -> Course {
     let mut gen_ed_fulfillments: Vec<String> = Vec::new();
     let mut distance_available = false;
     let mut offered_terms: Vec<String> = Vec::new();
+
+    let attrs_re = RegexBuilder::new(r"<p.*?>(.*?)</p>")
+        .dot_matches_new_line(true)
+        .build()
+        .unwrap();
 
     if let Some(capture) = re.captures(raw) {
         title = capture
@@ -51,24 +56,28 @@ fn parse_course_block(code: CourseCode, raw: &str) -> Course {
             .get(3)
             .map(|m| m.as_str())
             .unwrap_or_default()
-            .trim()
-            .split("<br />\n")
-            .collect::<Vec<&str>>();
+            .trim();
 
-        let desc_re = RegexBuilder::new(r#"<a href="\/search\/\?P=(\w+)%20(.+)" title=.*<\/a>"#)
-            .build()
-            .unwrap();
+
+        let attrs = attrs_re
+            .captures_iter(attrs)
+            .map(|c| c.get(1).unwrap().as_str().trim())
+            .collect::<Vec<_>>();
+
+        // let desc_re = RegexBuilder::new(r#"<a href="\/search\/\?P=(\w+)%20(.+)" title=.*<\/a>"#)
+        //     .build()
+        //     .unwrap();
         description = attrs.first().unwrap().to_string();
 
-        description = desc_re
-            .replace_all(&description, "<a href=\"#$1 $2\">$1 $2</a>")
-            .to_string();
+        // description = desc_re
+        //     .replace_all(&description, "<a href=\"#$1 $2\">$1 $2</a>")
+        //     .to_string();
 
         for (i, attr) in attrs.iter().enumerate() {
             if i != 0 {
                 if attr.contains(DISTANT_ED_ATTR_ID) {
                     distance_available = true;
-                } else if attr.starts_with(PRE_REQ_ATTR_ID) {
+                } else if attr.contains(PRE_REQ_ATTR_ID) {
                     let re = RegexBuilder::new(r"title=.([^ ]*).").build().unwrap();
                     for (j, cap) in re.captures_iter(attr).enumerate() {
                         if j != 0 {
